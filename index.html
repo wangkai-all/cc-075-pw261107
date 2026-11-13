@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>检验周转分析 · 采样到出结果</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">⏱</div>
+      <div>
+        <h1>检验周转分析</h1>
+        <p class="sub">采样 → 接收 → 上机 → 出结果，按科室、项目与班次拆解</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="pill"><span class="dot" aria-hidden="true"></span>虚构演示数据</span>
+      <button class="btn ghost" id="theme-toggle" type="button" aria-label="切换深浅色主题">深色</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="filterbar" aria-label="全局筛选">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="test-select">检验项目</label>
+          <select id="test-select"></select>
+        </div>
+        <div class="filter-group" role="group" aria-label="日期范围">
+          <div class="date-presets" id="date-presets"></div>
+          <label for="date-from" class="sr-only">开始日期</label>
+          <input type="date" id="date-from">
+          <span aria-hidden="true" style="color: var(--ink-3)">→</span>
+          <label for="date-to" class="sr-only">结束日期</label>
+          <input type="date" id="date-to">
+        </div>
+        <div class="filter-group">
+          <label for="dept-select">科室</label>
+          <select id="dept-select"></select>
+        </div>
+        <div class="filter-group">
+          <label for="shift-select">班次</label>
+          <select id="shift-select">
+            <option value="all">全部班次</option>
+            <option value="morning">白班 08–16</option>
+            <option value="evening">中班 16–24</option>
+            <option value="night">夜班 00–08（归前一日）</option>
+          </select>
+        </div>
+        <div class="scope-note" id="scope-note"></div>
+      </div>
+    </section>
+
+    <section class="grid hero-grid" aria-label="总览">
+      <div class="card hero">
+        <div>
+          <div class="hero-label">
+            <span>中位总周转 · 采样到出结果</span>
+            <span class="status-badge" id="hero-status">—</span>
+          </div>
+          <div class="hero-value" id="hero-value">—</div>
+          <div class="hero-target" id="hero-target"></div>
+        </div>
+        <div class="hero-foot" id="hero-foot"></div>
+      </div>
+      <div class="kpi-grid" id="kpi-grid" aria-label="关键指标"></div>
+    </section>
+
+    <section aria-labelledby="stage-heading">
+      <div class="section-label">
+        <h2 id="stage-heading">阶段分布</h2>
+        <span class="hint">每段独立刻度 · 中位、P10–P90 与目标线 · 不含待核对记录</span>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <p class="card-sub" id="stage-sub"></p>
+          </div>
+          <div class="card-actions">
+            <button class="btn ghost" type="button" data-table-toggle="stage">数据表</button>
+          </div>
+        </div>
+        <div class="chart-wrap" id="stage-chart"></div>
+        <div class="chart-meta" id="stage-meta"></div>
+        <div class="table-wrap hidden" id="stage-table"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="shift-heading">
+      <div class="section-label">
+        <h2 id="shift-heading">班次对比</h2>
+        <span class="hint">按采样时刻归属 · 夜班 00:00–08:00 计入前一业务日</span>
+      </div>
+      <div class="grid stage-grid">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">各班次各阶段中位时长</h3>
+              <p class="card-sub">实心条为中位数，浅色延伸至 P90；灰线为项目目标。</p>
+            </div>
+            <div class="card-actions">
+              <button class="btn ghost" type="button" data-table-toggle="shift">数据表</button>
+            </div>
+          </div>
+          <div class="chart-wrap" id="shift-chart"></div>
+          <div class="table-wrap hidden" id="shift-table"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">班次时间带与跨日归属</h3>
+              <p class="card-sub">夜班跨日不会拆成两个班次；日期筛选按业务日生效。</p>
+            </div>
+          </div>
+          <div class="chart-wrap" id="shift-strip"></div>
+          <div class="table-wrap" id="shift-summary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="dept-heading">
+      <div class="section-label">
+        <h2 id="dept-heading">科室差异</h2>
+        <span class="hint">中位总周转 · 红色为超过项目目标</span>
+      </div>
+      <div class="grid split-grid">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">各科室中位总周转</h3>
+            <p class="card-sub" id="dept-sub"></p>
+            </div>
+            <div class="card-actions">
+              <button class="btn ghost" type="button" data-table-toggle="dept">数据表</button>
+            </div>
+          </div>
+          <div class="chart-wrap" id="dept-chart"></div>
+          <div class="table-wrap hidden" id="dept-table"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">项目横向对比</h3>
+              <p class="card-sub">同一日期与班次筛选下，各项目的标本与患者口径。</p>
+            </div>
+          </div>
+          <div class="table-wrap" id="project-table"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="overdue-heading">
+      <div class="section-label">
+        <h2 id="overdue-heading">超时样本</h2>
+        <span class="hint">按总周转从长到短 · 展开可见关键时间点与各阶段用时</span>
+      </div>
+      <div class="card">
+        <div class="list-toolbar">
+          <div class="chiprow" id="spec-tabs" role="tablist" aria-label="样本筛选"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label for="spec-search" class="section-hint" style="font-size:12px;color:var(--ink-3)">标本号</label>
+            <input id="spec-search" type="search" placeholder="搜索标本号 / 患者键" style="min-width:190px">
+            <label for="spec-sort" style="font-size:12px;color:var(--ink-3)">排序</label>
+            <select id="spec-sort">
+              <option value="slow">总周转 从长到短</option>
+              <option value="new">采样时间 最新优先</option>
+              <option value="fast">总周转 从短到长</option>
+            </select>
+          </div>
+        </div>
+        <div id="spec-list-label" class="list-toolbar"><span class="count" id="spec-count"></span></div>
+        <div class="table-wrap">
+          <table class="spec-table" id="spec-table">
+            <thead>
+              <tr>
+                <th scope="col" style="width:34px"><span class="sr-only">展开</span></th>
+                <th scope="col">标本号</th>
+                <th scope="col">采样时间</th>
+                <th scope="col">班次</th>
+                <th scope="col">科室</th>
+                <th scope="col" class="num">采样→接收</th>
+                <th scope="col" class="num">接收→上机</th>
+                <th scope="col" class="num">上机→结果</th>
+                <th scope="col" class="num">总周转</th>
+                <th scope="col">标记</th>
+              </tr>
+            </thead>
+            <tbody id="spec-body"></tbody>
+          </table>
+        </div>
+        <div id="spec-empty"></div>
+        <button class="load-more hidden" id="spec-more" type="button">显示更多</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="events-heading">
+      <div class="section-label">
+        <h2 id="events-heading">重采、复测、取消与设备停机</h2>
+        <span class="hint">分开统计，不把同一份样本的检测过程算成多个独立患者</span>
+      </div>
+      <div class="card">
+        <div class="event-grid" id="event-grid"></div>
+        <div class="table-wrap pause-table" id="pause-table"></div>
+        <p class="table-note" id="event-note"></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="review-heading">
+      <div class="section-label">
+        <h2 id="review-heading">待核对</h2>
+        <span class="hint">缺少时间戳或先后顺序不合理 · 不进入平均值与超时率</span>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title" id="review-count">—</h3>
+            <p class="card-sub">先修正源数据，再重新纳入统计；下方规则面板不会影响这些记录。</p>
+          </div>
+        </div>
+        <div class="grid" id="review-list" style="gap:10px"></div>
+        <div id="review-empty"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="rules-heading">
+      <div class="section-label">
+        <h2 id="rules-heading">目标时长与排除规则</h2>
+        <span class="hint">草稿实时预览受影响数量 · 应用后刷新全部图表</span>
+      </div>
+      <div class="grid rules-grid">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title" id="rules-title">规则配置</h3>
+              <p class="card-sub">当前项目：<span id="rules-test"></span>。目标与排除规则按项目独立维护。</p>
+            </div>
+            <span class="applied-note hidden" id="applied-note">✓ 已应用</span>
+          </div>
+          <div id="rules-form"></div>
+          <div class="rules-actions">
+            <button class="btn primary" id="apply-rules" type="button">应用规则</button>
+            <button class="btn" id="reset-rules" type="button">恢复默认</button>
+            <span class="dirty-note hidden" id="dirty-note">有未应用的草稿改动</span>
+          </div>
+        </div>
+        <div class="preview-panel" id="preview-panel">
+          <h3>规则影响预览</h3>
+          <p class="preview-note" id="preview-note"></p>
+          <div class="delta-list" id="preview-deltas"></div>
+          <div id="preview-affected"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>
+        虚构演示数据 · 不含真实个人信息 · 标本与患者编号均为匿名生成
+      </div>
+      <div class="mono" id="data-meta"></div>
+    </footer>
+  </main>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

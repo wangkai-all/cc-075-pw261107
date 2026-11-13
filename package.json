@@ -1,0 +1,12 @@
+{
+  "name": "turnaround-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "检验周转分析：采样到出结果的阶段、班次、科室视图（虚构数据）",
+  "scripts": {
+    "start": "node scripts/serve.mjs 4173",
+    "data": "node scripts/generate-data.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
